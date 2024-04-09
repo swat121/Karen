@@ -20,9 +20,15 @@
 	<dependencies>
 
 		<dependency>
-			<groupId>org.jmdns</groupId>
-			<artifactId>jmdns</artifactId>
-			<version>3.5.8</version>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-messaging</artifactId>
+			<version>5.3.15</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.integration</groupId>
+			<artifactId>spring-integration-mqtt</artifactId>
+			<version>5.5.8</version>
 		</dependency>
 
 		<dependency>
