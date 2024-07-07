@@ -1,9 +1,13 @@
 package com.micro.config;
 
+import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
+import org.eclipse.paho.client.mqttv3.MqttCallback;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
+import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.integration.annotation.IntegrationComponentScan;
+import org.springframework.integration.annotation.ServiceActivator;
 import org.springframework.integration.channel.DirectChannel;
 import org.springframework.integration.mqtt.core.DefaultMqttPahoClientFactory;
 import org.springframework.integration.mqtt.core.MqttPahoClientFactory;
@@ -13,6 +17,8 @@ import org.springframework.integration.mqtt.support.DefaultPahoMessageConverter;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.MessageHandler;
 
+import java.util.UUID;
+
 @Configuration
 @IntegrationComponentScan
 public class MqttConfiguration {
@@ -20,9 +26,12 @@ public class MqttConfiguration {
     @Bean
     public MqttConnectOptions mqttConnectOptions() {
         MqttConnectOptions options = new MqttConnectOptions();
-        options.setServerURIs(new String[]{"tcp://yourBrokerAddress:1883"});
+        options.setServerURIs(new String[]{"tcp://192.168.0.11:1883"});
 //        options.setUserName("yourUsername"); // Если требуется
 //        options.setPassword("yourPassword".toCharArray()); // Если требуется
+        options.setKeepAliveInterval(60);
+        options.setCleanSession(true);
+        options.setConnectionTimeout(10);
         return options;
     }
 
@@ -58,12 +67,24 @@ public class MqttConfiguration {
     // Адаптер для получения сообщений
     @Bean
     public MqttPahoMessageDrivenChannelAdapter inbound() {
+        String clientId = "karen-api-integration-" + UUID.randomUUID().toString();
+
         MqttPahoMessageDrivenChannelAdapter adapter =
-                new MqttPahoMessageDrivenChannelAdapter("esp-client", mqttClientFactory(),
-                        "karen.mqtt.esp.change");
+                new MqttPahoMessageDrivenChannelAdapter(clientId, mqttClientFactory(),
+                        "home/esp/data/event");
         adapter.setCompletionTimeout(5000);
         adapter.setConverter(new DefaultPahoMessageConverter());
         adapter.setOutputChannel(mqttInputChannel());
         return adapter;
+    }
+
+    @Bean
+    @ServiceActivator(inputChannel = "mqttInputChannel")
+    public MessageHandler handler() {
+        return message -> {
+            String payload = (String) message.getPayload();
+//            logger.info("Received message: " + payload);
+            System.out.println("Received message: " + payload);  // Вывод сообщения в консоль
+        };
     }
 }
