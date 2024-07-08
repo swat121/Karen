@@ -1,4 +1,4 @@
-package com.micro.service;
+package com.micro.service.mqtt;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.integration.support.MessageBuilder;
