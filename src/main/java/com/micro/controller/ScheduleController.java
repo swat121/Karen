@@ -31,6 +31,13 @@ public class ScheduleController {
         return new ResponseEntity<>(responseMessage, HttpStatus.ACCEPTED);
     }
 
+    @PostMapping("/api/v1/schedule/mqtt/interval/start")
+    public ResponseEntity<String> startMqttIntervalTask() {
+        dynamicSchedulerService.fetchConnectedClients("Mqtt-fetch", 3000L).join();
+
+        return new ResponseEntity<>("Mqtt-fetch", HttpStatus.ACCEPTED);
+    }
+
     @PostMapping("/api/v1/schedule/stop")
     public ResponseEntity<String> stopIntervalTask(@RequestParam String taskName) {
         dynamicSchedulerService.stopTask(taskName);

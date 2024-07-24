@@ -1,6 +1,9 @@
 package com.micro.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.micro.dto.data.SensorRequest;
+import com.micro.dto.mqtt.MqttResponse;
 import com.micro.dto.scheduler.IntervalTask;
 import com.micro.dto.scheduler.PlannedTask;
 import com.micro.enums.Services;
@@ -28,13 +31,14 @@ import java.util.concurrent.ScheduledFuture;
 @EnableScheduling
 @RequiredArgsConstructor
 public class DynamicSchedulerService {
-    @Value("${board.port}")
-    private String port;
+
+    private String mqttHost = "http://192.168.0.16:18083/api/v5/clients";
     private static final String API_V1_SENSORS = "/api/v1/sensors";
     private static final String KAREN_DATA = Services.KAREN_DATA.getTitle();
     private final ThreadPoolTaskScheduler threadPoolTaskScheduler;
     private Map<String, ScheduledFuture<?>> scheduledTasks = new HashMap<>();
     private final BoardService boardService;
+    private final ObjectMapper objectMapper;
     private final BotService botService;
     private final ConnectionService connectionService;
     private static final Logger LOG = LogManager.getRootLogger();
@@ -56,6 +60,29 @@ public class DynamicSchedulerService {
             futureTask = threadPoolTaskScheduler.scheduleWithFixedDelay(() -> executeSensorIntervalTask(body), body.getUpdateMillisTime());
 
             scheduledTasks.put(body.getTaskName(), futureTask);
+        });
+    }
+
+    @Async
+    public synchronized CompletableFuture<Void> fetchConnectedClients(String taskName, Long updateMillisTime) {
+        return CompletableFuture.runAsync(() -> {
+            if (scheduledTasks.get(taskName) != null) {
+                stopTask(taskName);
+            }
+            ScheduledFuture<?> futureTask = null;
+
+            futureTask = threadPoolTaskScheduler.scheduleWithFixedDelay(() -> {
+               String response = connectionService.getResponseFromMqtt(mqttHost, String.class);
+                try {
+                    MqttResponse mqttResponse = objectMapper.readValue(response, MqttResponse.class);
+                    LOG.info("Client from MQTT: " + mqttResponse);
+                } catch (JsonProcessingException e) {
+                    throw new RuntimeException(e);
+                }
+
+            }, updateMillisTime);
+
+            scheduledTasks.put(taskName, futureTask);
         });
     }
 

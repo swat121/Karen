@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.springframework.cloud.client.loadbalancer.LoadBalancerClient;
 import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
@@ -17,6 +18,16 @@ import java.net.URI;
 public class ConnectionService {
     private final RestTemplate restTemplate;
     private final LoadBalancerClient loadBalancerClient;
+
+    @SneakyThrows
+    public <T> T getResponseFromMqtt(String mqttHost, Class<T> responseType) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MjE4NTQ0NDEyMDUsImlzcyI6IkVNUVgifQ.ARiWh09YQMCIjPAdYZfglMPf8cK45ascr15eZTp1NpA");
+
+        HttpEntity<String> entity = new HttpEntity<>(headers);
+
+        return restTemplate.exchange(mqttHost, HttpMethod.GET, entity, responseType).getBody();
+    }
 
     public <T> T requestForBoard(String url, HttpMethod method, @Nullable HttpEntity<MultiValueMap<String, String>> requestEntity, Class<T> responseType) {
         return restTemplate.exchange(url, method, requestEntity, responseType).getBody();
