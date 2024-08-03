@@ -1,9 +1,13 @@
 package com.micro.service.mqtt;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.micro.dto.Client;
+import com.micro.dto.mqtt.MqttCommandData;
+import com.micro.service.ClientService;
+import lombok.AllArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.paho.client.mqttv3.*;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
@@ -11,10 +15,13 @@ import java.util.HashSet;
 import java.util.Set;
 
 @Service
+@AllArgsConstructor
 public class MqttService implements MqttCallback {
 
-    @Autowired
-    private MqttClient mqttClient;
+    private final MqttClient mqttClient;
+    private final ClientService clientService;
+
+    private final ObjectMapper objectMapper;
 
     private static final Logger LOG = LogManager.getRootLogger();
 
@@ -43,6 +50,17 @@ public class MqttService implements MqttCallback {
     public void messageArrived(String topic, MqttMessage message) throws Exception {
         String payload = new String(message.getPayload());
         LOG.info("Message arrived. Topic: " + topic + " Message: " + payload);
+
+        if (topic.equalsIgnoreCase("home/esp/data/event")) {
+            ObjectMapper mapper = new ObjectMapper();
+
+            Client client = mapper.readValue(payload, Client.class);
+//            clientService.checkAndProcessClient(client);
+//            clientService.postBoardConfigInKarenData(client.getIp());
+
+            String topicToSubscribe = String.format("home/esp/%s/event", client.getName());
+            this.subscribe(topicToSubscribe);
+        }
     }
 
     @Override
@@ -50,8 +68,8 @@ public class MqttService implements MqttCallback {
         LOG.info("Delivery complete. Token: " + token);
     }
 
-    public void publish(String topic, String payload) throws Exception {
-        MqttMessage message = new MqttMessage(payload.getBytes());
+    public void publish(String topic, MqttCommandData payload) throws Exception {
+        MqttMessage message = new MqttMessage(objectMapper.writeValueAsBytes(payload));
         message.setQos(1);
         mqttClient.publish(topic, message);
     }

@@ -1,31 +1,42 @@
 package com.micro.controller;
 
 
+import com.micro.dto.data.CommandRequestData;
+import com.micro.enums.ModuleTypes;
 import com.micro.service.BoardService;
 import lombok.AllArgsConstructor;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 
 @RestController
 @AllArgsConstructor
+@RequestMapping("/api/v2")
 public class BoardController {
-    public BoardService boardService;
+    public final BoardService boardService;
 
-    @GetMapping("/api/v1/{name}/sensors/{module}/{id}")
-    public String getDataBySensor(@PathVariable String name, @PathVariable String module, @PathVariable String id){
-        return boardService.makeSensorRequest(name, module, id);
+    @GetMapping("/{name}/sensors")
+    public ResponseEntity<String> getDataBySensor(@PathVariable String name, @RequestBody CommandRequestData commandRequestData){
+        boardService.sendCommand(name, commandRequestData, ModuleTypes.SENSOR);
+
+        String text = String.format("Processing started for: %s, module: %s", name, commandRequestData.getModuleName());
+        return ResponseEntity.ok(text);
     }
 
-    @GetMapping("/api/v1/{name}/trackers/{module}/{id}")
-    public String getDataByTracker(@PathVariable String name, @PathVariable String module, @PathVariable String id){
-        return boardService.makeTrackerRequest(name, module, id);
+    @GetMapping("/{name}/trackers")
+    public ResponseEntity<String> getDataByTracker(@PathVariable String name, @RequestBody CommandRequestData commandRequestData){
+        boardService.sendCommand(name, commandRequestData, ModuleTypes.TRACKER);
+
+        String text = String.format("Processing started for: %s, module: %s", name, commandRequestData.getModuleName());
+        return ResponseEntity.ok(text);
     }
 
-    @PutMapping("/api/v1/{name}/switchers/{module}/{id}")
-    public String putDataBySwitcher(@PathVariable String name, @PathVariable String module, @PathVariable String id){
-        return boardService.makeSwitcherRequest(name, module, id);
+    @PutMapping("/{name}/switchers")
+    public ResponseEntity<String> putDataBySwitcher(@PathVariable String name, @RequestBody CommandRequestData commandRequestData){
+        boardService.sendCommand(name, commandRequestData, ModuleTypes.SWITCHER);
+
+        String text = String.format("Processing started for: %s, module: %s", name, commandRequestData.getModuleName());
+        return ResponseEntity.ok(text);
     }
 }
 
