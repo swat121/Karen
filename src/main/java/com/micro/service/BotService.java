@@ -2,6 +2,7 @@ package com.micro.service;
 
 import com.micro.dto.ExternalUser;
 import com.micro.dto.bot.NotifyRequest;
+import com.micro.dto.mqtt.MqttCallbackData;
 import com.micro.enums.Services;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpEntity;
@@ -18,6 +19,7 @@ import java.util.stream.Stream;
 public class BotService {
     private static final String API_V1_USERS = "/api/v1/users";
     private static final String API_V1_BOT_NOTIFY = "/api/v1/bot/notify";
+    private static final String API_V1_BOT_CALLBACK = "/api/v1/bot/callback";
     private static final String KAREN_BOT = Services.KAREN_BOT.getTitle();
     private static final String KAREN_DATA = Services.KAREN_DATA.getTitle();
     private final ConnectionService connectionService;
@@ -48,5 +50,9 @@ public class BotService {
         return Stream.of(connectionService.getResponseFromService(KAREN_DATA, API_V1_USERS, ExternalUser[].class))
                 .map(ExternalUser::getTelegramId)
                 .toList();
+    }
+
+    public void sendCallback(MqttCallbackData callbackData) {
+        connectionService.postRequestForService(KAREN_BOT, API_V1_BOT_CALLBACK, buildRequest(callbackData));
     }
 }

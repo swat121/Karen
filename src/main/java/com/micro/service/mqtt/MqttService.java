@@ -2,7 +2,9 @@ package com.micro.service.mqtt;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.micro.dto.Client;
+import com.micro.dto.mqtt.MqttCallbackData;
 import com.micro.dto.mqtt.MqttCommandData;
+import com.micro.service.BotService;
 import com.micro.service.ClientService;
 import lombok.AllArgsConstructor;
 import org.apache.logging.log4j.LogManager;
@@ -20,6 +22,7 @@ public class MqttService implements MqttCallback {
 
     private final MqttClient mqttClient;
     private final ClientService clientService;
+    private final BotService botService;
 
     private final ObjectMapper objectMapper;
 
@@ -55,11 +58,16 @@ public class MqttService implements MqttCallback {
             ObjectMapper mapper = new ObjectMapper();
 
             Client client = mapper.readValue(payload, Client.class);
-//            clientService.checkAndProcessClient(client);
-//            clientService.postBoardConfigInKarenData(client.getIp());
+            clientService.checkAndProcessClient(client);
+            clientService.postBoardConfigInKarenData(client.getIp());
 
             String topicToSubscribe = String.format("home/esp/%s/event", client.getName());
             this.subscribe(topicToSubscribe);
+        }
+
+        if (topic.matches("home/esp/[^/]+/event") && !topic.equalsIgnoreCase("home/esp/data/event")) {
+            MqttCallbackData callbackData = objectMapper.readValue(payload, MqttCallbackData.class);
+            botService.sendCallback(callbackData);
         }
     }
 
